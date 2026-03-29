@@ -3097,9 +3097,9 @@ RectTransform:
   - {fileID: 1586535593}
   m_Father: {fileID: 39351277}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 250, y: 150}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 250, y: -115}
   m_SizeDelta: {x: 500, y: 230}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2039108686
@@ -3169,16 +3169,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80fbde62ed75ac94cb682793bad77f8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Practice1.ConnectionUI
-  _connectPanel: {fileID: 0}
-  _nicknameInput: {fileID: 0}
-  _addressInput: {fileID: 0}
-  _hostButton: {fileID: 0}
-  _clientButton: {fileID: 0}
-  _statusText: {fileID: 0}
-  _gameplayPanel: {fileID: 0}
-  _attackButton: {fileID: 0}
-  _modeText: {fileID: 0}
-  _nicknameText: {fileID: 0}
+  _connectPanel: {fileID: 791299894}
+  _nicknameInput: {fileID: 659286015}
+  _addressInput: {fileID: 1827182100}
+  _hostButton: {fileID: 1158680083}
+  _clientButton: {fileID: 724992107}
+  _statusText: {fileID: 1966983840}
+  _gameplayPanel: {fileID: 2039108684}
+  _attackButton: {fileID: 1586535594}
+  _modeText: {fileID: 563224164}
+  _nicknameText: {fileID: 932692343}
   _port: 7777
 --- !u!4 &2078729581
 Transform:
