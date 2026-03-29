@@ -4,14 +4,14 @@ using UnityEngine.InputSystem;
 
 namespace Practice1
 {
-    [RequireComponent(typeof(PlayerCombat))]
+    [RequireComponent(typeof(PlayerShooting))]
     public class PlayerInput : NetworkBehaviour
     {
-        private PlayerCombat _combat;
+        private PlayerShooting _shooting;
 
         private void Awake()
         {
-            _combat = GetComponent<PlayerCombat>();
+            _shooting = GetComponent<PlayerShooting>();
         }
 
         private void Update()
@@ -23,7 +23,7 @@ namespace Practice1
 
             if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
             {
-                _combat.TryAttackNearest();
+                _shooting.TryShoot();
             }
         }
     }

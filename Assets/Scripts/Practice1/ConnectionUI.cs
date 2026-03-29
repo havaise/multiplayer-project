@@ -23,10 +23,14 @@ namespace Practice1
         [SerializeField] private Button _attackButton;
         [SerializeField] private TMP_Text _modeText;
         [SerializeField] private TMP_Text _nicknameText;
+        [SerializeField] private TMP_Text _ammoText;
+        [SerializeField] private TMP_Text _respawnText;
 
         [SerializeField] private ushort _port = 7777;
 
-        private PlayerCombat _localCombat;
+        private PlayerShooting _localShooting;
+        private PlayerNetwork _localPlayer;
+        private float _localDeathTime = -1f;
 
         private void Awake()
         {
@@ -74,7 +78,7 @@ namespace Practice1
             else
             {
                 SetPanels(false);
-                EnsureLocalCombat();
+                EnsureLocalReferences();
 
                 string mode = manager.IsHost ? "Host" : manager.IsServer ? "Server" : "Client";
                 if (_modeText != null)
@@ -87,9 +91,39 @@ namespace Practice1
                     _nicknameText.text = $"Nickname: {PlayerNickname}";
                 }
 
-                if (_attackButton != null)
+                if (_attackButton != null && _localPlayer != null)
                 {
-                    _attackButton.interactable = _localCombat != null;
+                    _attackButton.interactable =
+                        _localShooting != null &&
+                        _localPlayer.IsAlive.Value &&
+                        _localShooting.HasAmmo;
+                }
+
+                if (_ammoText != null)
+                {
+                    if (_localShooting == null)
+                    {
+                        _ammoText.text = "Ammo: -";
+                    }
+                    else
+                    {
+                        _ammoText.text = $"Ammo: {_localShooting.CurrentAmmo.Value}/{_localShooting.MaxAmmo}";
+                    }
+                }
+
+                UpdateRespawnUi();
+
+                if (_localPlayer != null)
+                {
+                    bool dead = !_localPlayer.IsAlive.Value;
+                    if (dead && _localDeathTime < 0f)
+                    {
+                        _localDeathTime = Time.time;
+                    }
+                    else if (!dead)
+                    {
+                        _localDeathTime = -1f;
+                    }
                 }
             }
         }
@@ -161,16 +195,16 @@ namespace Practice1
 
         private void OnAttackPressed()
         {
-            EnsureLocalCombat();
-            if (_localCombat != null)
+            EnsureLocalReferences();
+            if (_localShooting != null)
             {
-                _localCombat.TryAttackNearest();
+                _localShooting.TryShoot();
             }
         }
 
-        private void EnsureLocalCombat()
+        private void EnsureLocalReferences()
         {
-            if (_localCombat != null && _localCombat.IsSpawned)
+            if (_localShooting != null && _localShooting.IsSpawned && _localPlayer != null && _localPlayer.IsSpawned)
             {
                 return;
             }
@@ -179,7 +213,8 @@ namespace Practice1
             {
                 if (player != null && player.IsOwner)
                 {
-                    _localCombat = player.GetComponent<PlayerCombat>();
+                    _localPlayer = player;
+                    _localShooting = player.GetComponent<PlayerShooting>();
                     return;
                 }
             }
@@ -204,6 +239,37 @@ namespace Practice1
             {
                 _statusText.text = message;
             }
+        }
+
+        private void UpdateRespawnUi()
+        {
+            if (_respawnText == null)
+            {
+                return;
+            }
+
+            if (_localPlayer == null)
+            {
+                _respawnText.text = string.Empty;
+                return;
+            }
+
+            if (_localPlayer.IsAlive.Value)
+            {
+                if (_localShooting != null && !_localShooting.HasAmmo)
+                {
+                    _respawnText.text = "No ammo. Respawn to refill.";
+                }
+                else
+                {
+                    _respawnText.text = string.Empty;
+                }
+                return;
+            }
+
+            float deathTime = _localDeathTime < 0f ? Time.time : _localDeathTime;
+            float left = Mathf.Max(0f, _localPlayer.RespawnDelay - (Time.time - deathTime));
+            _respawnText.text = $"Respawn in: {left:0.0}s";
         }
     }
 }
