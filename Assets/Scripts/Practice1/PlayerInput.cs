@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Practice1
 {
@@ -20,7 +21,7 @@ namespace Practice1
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.F))
+            if (Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame)
             {
                 _combat.TryAttackNearest();
             }
