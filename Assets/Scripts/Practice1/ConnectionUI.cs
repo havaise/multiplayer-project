@@ -16,6 +16,7 @@ namespace Practice1
         public static string PlayerNickname { get; private set; } = "Player";
         public static bool PredictionEnabled { get; private set; } = true;
         public static int SimulatedLatencyMs { get; private set; }
+        private static ConnectionUI _instance;
 
         [Header("Connection UI")]
         [SerializeField] private GameObject _connectPanel;
@@ -41,6 +42,8 @@ namespace Practice1
 
         private void Awake()
         {
+            _instance = this;
+
             if (_nicknameInput != null)
             {
                 _nicknameInput.text = PlayerNickname;
@@ -64,6 +67,14 @@ namespace Practice1
             if (_attackButton != null)
             {
                 _attackButton.onClick.AddListener(OnAttackPressed);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_instance == this)
+            {
+                _instance = null;
             }
         }
 
@@ -210,6 +221,25 @@ namespace Practice1
             {
                 _nicknameInput.text = PlayerNickname;
             }
+        }
+
+        public static string GetEffectiveNickname()
+        {
+            string uiValue = _instance != null && _instance._nicknameInput != null
+                ? _instance._nicknameInput.text
+                : string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(uiValue))
+            {
+                return uiValue.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(PlayerNickname))
+            {
+                return PlayerNickname.Trim();
+            }
+
+            return "Player";
         }
 
         private void OnAttackPressed()

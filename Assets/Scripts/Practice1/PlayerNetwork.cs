@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
@@ -25,6 +26,7 @@ namespace Practice1
         private Renderer[] _renderers;
         private Collider[] _colliders;
         private bool _isRespawning;
+        private Coroutine _nicknameSyncRoutine;
 
         public override void OnStartNetwork()
         {
@@ -46,10 +48,13 @@ namespace Practice1
 
             ApplyAliveVisualState(IsAlive.Value);
 
-            if (base.Owner != null && base.Owner.IsLocalClient)
-            {
-                SubmitNicknameServerRpc(ConnectionUI.PlayerNickname);
-            }
+            StartNicknameSyncRoutine();
+        }
+
+        public override void OnOwnershipClient(NetworkConnection prevOwner)
+        {
+            base.OnOwnershipClient(prevOwner);
+            StartNicknameSyncRoutine();
         }
 
         public override void OnStopNetwork()
@@ -59,6 +64,12 @@ namespace Practice1
             HP.OnChange -= OnHpChanged;
             IsAlive.OnChange -= OnIsAliveChanged;
             Players.Remove(this);
+
+            if (_nicknameSyncRoutine != null)
+            {
+                StopCoroutine(_nicknameSyncRoutine);
+                _nicknameSyncRoutine = null;
+            }
         }
 
         [ServerRpc]
@@ -71,6 +82,37 @@ namespace Practice1
             Nickname.Value = safeValue;
             HP.Value = Mathf.Clamp(HP.Value, 0, _maxHp);
             IsAlive.Value = HP.Value > 0;
+        }
+
+        private void StartNicknameSyncRoutine()
+        {
+            if (_nicknameSyncRoutine != null)
+            {
+                return;
+            }
+
+            if (base.Owner == null || !base.Owner.IsLocalClient)
+            {
+                return;
+            }
+
+            _nicknameSyncRoutine = StartCoroutine(NicknameSyncRoutine());
+        }
+
+        private IEnumerator NicknameSyncRoutine()
+        {
+            while (IsSpawned && base.Owner != null && base.Owner.IsLocalClient)
+            {
+                string desiredNickname = ConnectionUI.GetEffectiveNickname();
+                if (!string.Equals(Nickname.Value, desiredNickname))
+                {
+                    SubmitNicknameServerRpc(desiredNickname);
+                }
+
+                yield return new WaitForSeconds(0.5f);
+            }
+
+            _nicknameSyncRoutine = null;
         }
 
         private void OnHpChanged(int previous, int next, bool asServer)
