@@ -86,6 +86,12 @@ namespace Practice1
 
             int nextHp = Mathf.Max(0, target.HP.Value - _damage);
             target.HP.Value = nextHp;
+            if (nextHp <= 0)
+            {
+                target.RegisterDeathOnServer();
+                PlayerNetwork shooter = PlayerNetwork.FindByOwnerId(_shooterClientId);
+                shooter?.AddScore(1);
+            }
 
             Despawn();
         }

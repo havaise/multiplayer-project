@@ -15,6 +15,9 @@ namespace Practice1
         public readonly SyncVar<string> Nickname = new("Player");
         public readonly SyncVar<int> HP = new(100);
         public readonly SyncVar<bool> IsAlive = new(true);
+        public readonly SyncVar<int> Score = new(0);
+        public readonly SyncVar<int> Kills = new(0);
+        public readonly SyncVar<int> Deaths = new(0);
 
         [SerializeField] private int _maxHp = 100;
         [SerializeField] private float _respawnDelay = 3f;
@@ -61,6 +64,19 @@ namespace Practice1
             Players.Remove(this);
         }
 
+        public static PlayerNetwork FindByOwnerId(int ownerId)
+        {
+            foreach (PlayerNetwork player in Players)
+            {
+                if (player != null && player.OwnerId == ownerId)
+                {
+                    return player;
+                }
+            }
+
+            return null;
+        }
+
         [ServerRpc]
         private void SubmitNicknameServerRpc(string nickname)
         {
@@ -97,9 +113,7 @@ namespace Practice1
             _isRespawning = true;
             yield return new WaitForSeconds(_respawnDelay);
 
-            MoveToSpawnPoint();
-            HP.Value = _maxHp;
-            IsAlive.Value = true;
+            ServerResetForMatch();
             _isRespawning = false;
         }
 
@@ -200,6 +214,75 @@ namespace Practice1
             }
 
             HP.Value = Mathf.Clamp(HP.Value + Mathf.Max(0, amount), 0, _maxHp);
+        }
+
+        public void AddScore(int amount)
+        {
+            if (!base.IsServerInitialized)
+            {
+                return;
+            }
+
+            int safeAmount = Mathf.Max(0, amount);
+            Score.Value += safeAmount;
+            Kills.Value += safeAmount;
+        }
+
+        public void RegisterDeathOnServer()
+        {
+            if (!base.IsServerInitialized)
+            {
+                return;
+            }
+
+            Deaths.Value++;
+        }
+
+        public void ServerResetForLobby(bool resetScore)
+        {
+            if (!base.IsServerInitialized)
+            {
+                return;
+            }
+
+            if (resetScore)
+            {
+                Score.Value = 0;
+                Kills.Value = 0;
+                Deaths.Value = 0;
+            }
+
+            ServerResetForMatch();
+        }
+
+        public void ServerResetForMatch()
+        {
+            if (!base.IsServerInitialized)
+            {
+                return;
+            }
+
+            _isRespawning = false;
+            MoveToSpawnPoint();
+            HP.Value = _maxHp;
+            IsAlive.Value = true;
+            ResetPhysicsState();
+        }
+
+        private void ResetPhysicsState()
+        {
+            if (_characterController != null)
+            {
+                _characterController.enabled = false;
+                _characterController.enabled = true;
+            }
+
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
         }
 
         public int MaxHp => _maxHp;

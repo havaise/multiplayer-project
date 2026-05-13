@@ -21,6 +21,7 @@ namespace Practice1
         [SerializeField] private GameObject _connectPanel;
         [SerializeField] private TMP_InputField _nicknameInput;
         [SerializeField] private TMP_InputField _addressInput;
+        [SerializeField] private TMP_InputField _portInput;
         [SerializeField] private Button _hostButton;
         [SerializeField] private Button _clientButton;
         [SerializeField] private TMP_Text _statusText;
@@ -41,6 +42,22 @@ namespace Practice1
 
         private void Awake()
         {
+            if (Application.isBatchMode)
+            {
+                if (_connectPanel != null)
+                {
+                    _connectPanel.SetActive(false);
+                }
+
+                if (_gameplayPanel != null)
+                {
+                    _gameplayPanel.SetActive(false);
+                }
+
+                enabled = false;
+                return;
+            }
+
             if (_nicknameInput != null)
             {
                 _nicknameInput.text = PlayerNickname;
@@ -49,6 +66,11 @@ namespace Practice1
             if (_addressInput != null && string.IsNullOrWhiteSpace(_addressInput.text))
             {
                 _addressInput.text = "127.0.0.1";
+            }
+
+            if (_portInput != null && string.IsNullOrWhiteSpace(_portInput.text))
+            {
+                _portInput.text = _port.ToString();
             }
 
             if (_hostButton != null)
@@ -193,6 +215,17 @@ namespace Practice1
             if (_addressInput != null)
             {
                 _addressInput.text = address;
+            }
+
+            if (_portInput != null)
+            {
+                string rawPort = _portInput.text;
+                if (ushort.TryParse(rawPort, out ushort parsed))
+                {
+                    _port = parsed;
+                }
+
+                _portInput.text = _port.ToString();
             }
 
             transport.SetClientAddress(address);
