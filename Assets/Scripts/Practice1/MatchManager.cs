@@ -34,6 +34,7 @@ namespace Practice1
         [SerializeField] private float _autoRestartDelay = 1f;
 
         private Coroutine _resultsCoroutine;
+        private PickupManager _pickupManager;
 
         public override void OnStartNetwork()
         {
@@ -58,6 +59,7 @@ namespace Practice1
             base.OnStartServer();
             MatchTimer.Value = _matchDuration;
             CurrentState.Value = GameState.WaitingForPlayers;
+            _pickupManager = FindFirstObjectByType<PickupManager>();
 
             if (InstanceFinder.ServerManager != null)
             {
@@ -152,6 +154,9 @@ namespace Practice1
             {
                 player?.ServerResetForMatch();
             }
+
+            _pickupManager ??= FindFirstObjectByType<PickupManager>();
+            _pickupManager?.SpawnRoundPickups();
 
             ResultsText.Value = string.Empty;
             MatchTimer.Value = _matchDuration;

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using FishNet;
 using FishNet.Object;
 using FishNet.Transporting;
@@ -11,12 +12,10 @@ namespace Practice1
         [SerializeField] private GameObject _healthPickupPrefab;
         [SerializeField] private Transform[] _spawnPoints;
         [SerializeField] private float _respawnDelay = 10f;
-        private bool _spawnedInitial;
+        private readonly List<Coroutine> _respawnCoroutines = new();
 
         private void OnEnable()
         {
-            TrySpawnInitial();
-
             if (InstanceFinder.NetworkManager != null)
             {
                 InstanceFinder.NetworkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
@@ -29,36 +28,48 @@ namespace Practice1
             {
                 InstanceFinder.NetworkManager.ServerManager.OnServerConnectionState -= OnServerConnectionState;
             }
+            for (int i = 0; i < _respawnCoroutines.Count; i++)
+            {
+                if (_respawnCoroutines[i] != null)
+                    StopCoroutine(_respawnCoroutines[i]);
+            }
+            _respawnCoroutines.Clear();
         }
 
         private void OnServerConnectionState(ServerConnectionStateArgs args)
         {
-            if (args.ConnectionState == LocalConnectionState.Started)
-            {
-                TrySpawnInitial();
-            }
-        }
-
-        private void TrySpawnInitial()
-        {
-            if (_spawnedInitial)
+            if (args.ConnectionState != LocalConnectionState.Stopped)
             {
                 return;
             }
 
+            ClearExistingPickups();
+            for (int i = 0; i < _respawnCoroutines.Count; i++)
+            {
+                if (_respawnCoroutines[i] != null)
+                    StopCoroutine(_respawnCoroutines[i]);
+            }
+            _respawnCoroutines.Clear();
+        }
+
+        [Server]
+        public void SpawnRoundPickups()
+        {
             if (!InstanceFinder.IsServerStarted)
             {
                 return;
             }
 
-            _spawnedInitial = true;
+            ClearExistingPickups();
             SpawnAll();
         }
 
+        [Server]
         private void SpawnAll()
         {
-            if (_spawnPoints == null)
+            if (_spawnPoints == null || _spawnPoints.Length == 0)
             {
+                Debug.LogWarning("[PickupManager] Spawn points are not configured.");
                 return;
             }
 
@@ -78,7 +89,8 @@ namespace Practice1
                 return;
             }
 
-            StartCoroutine(RespawnAfterDelay(position));
+            Coroutine routine = StartCoroutine(RespawnAfterDelay(position));
+            _respawnCoroutines.Add(routine);
         }
 
         private IEnumerator RespawnAfterDelay(Vector3 position)
@@ -91,6 +103,7 @@ namespace Practice1
         {
             if (_healthPickupPrefab == null)
             {
+                Debug.LogError("[PickupManager] Health pickup prefab is not assigned.");
                 return;
             }
 
@@ -105,6 +118,23 @@ namespace Practice1
             if (networkObject != null && InstanceFinder.ServerManager != null)
             {
                 InstanceFinder.ServerManager.Spawn(networkObject);
+            }
+            else
+            {
+                Debug.LogError("[PickupManager] Spawn failed: NetworkObject or ServerManager is missing.");
+            }
+        }
+
+        [Server]
+        private static void ClearExistingPickups()
+        {
+            HealthPickup[] pickups = FindObjectsByType<HealthPickup>(FindObjectsSortMode.None);
+            for (int i = 0; i < pickups.Length; i++)
+            {
+                if (pickups[i] != null && pickups[i].IsSpawned)
+                {
+                    pickups[i].Despawn();
+                }
             }
         }
     }
